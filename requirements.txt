@@ -1,0 +1,7 @@
+bs4
+discord
+mcstatus
+PyNaCl
+requests
+urllib3
+youtube-dl
