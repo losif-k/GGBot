@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Files
+.idea/
+mp3_files/
+log.txt
+credentials.json
