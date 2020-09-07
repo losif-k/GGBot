@@ -15,9 +15,9 @@ class MyLogger(object):
 
 def my_hook(d):
     if d['status'] == 'finished':
-        print('Done downloading, now converting ...')
+        print('Done downloading')
 
-ydl_opts = {
+ydl_opts_download = {
     'format': 'bestaudio/best',
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -26,8 +26,15 @@ ydl_opts = {
     }],
     'logger': MyLogger(),
     'progress_hooks': [my_hook],
-    'outtmpl' : 'mp3_files/Youtube-%(title)s.%(ext)s'
+    'outtmpl' : 'mp3_files/yt|%(title)s|%(id)s|.%(ext)s'
+    
+}
+ydl_opts_info = {
+    'outtmpl' : 'mp3_files/yt|%(id)s|.%(ext)s'
+    
 }
 def ytdownload(arg):
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+    with youtube_dl.YoutubeDL(ydl_opts_download) as ydl:
         ydl.download(['https://www.youtube.com/watch?v=' + arg])
+
+        

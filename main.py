@@ -14,6 +14,10 @@ import log  # log기록 함수
 import mp3  # mp3파일 관련 함수
 import ytdl
 
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+
 # 추가 파일
 
 with open('config.json') as f:
@@ -36,7 +40,6 @@ keepplaying = True
 tch_list = []
 vch_list = []
 vol = 0.15
-sv_addr = 'mc.losifz.com'
 recentuser = None
 goingtodiscon = False
 lock = False
@@ -53,7 +56,7 @@ def is_privileged(u):
 async def on_message(message):
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-    global tch, tch_id, vch, vch_id, c, note, guild, vc, playnext, play_msg, pause_msg, keepplaying, vol, sv_addr, list_msg, listdata, recentuser, goingtodiscon, lock
+    global tch, tch_id, vch, vch_id, guild, vc, playnext, play_msg, pause_msg, keepplaying, vol, list_msg, recentuser, goingtodiscon, lock
     channel = message.channel
     content = str(message.content)
     audpname = message.author.display_name
@@ -73,29 +76,34 @@ async def on_message(message):
         log.writelog(f"{명령어} Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         ...
     '''
-    if content.startswith('/명령어'):
+    if content.startswith('`명령어'):
         if message.channel in tch_list:
             await message.delete()
         embed = discord.Embed(title="**명령어**",
-                              description='**/노트 [내용]\n/코로나\n/목록\n/yt 11자리 코드\n/재생'
-                                          '<파일번호1> [파일번호2] 옵션{r - 랜덤}...\n/볼륨\n'
-                                          '/채널 [채널번호]\n/del**',
+                              description='**`코로나\n`목록\n`yt 11자리 코드\n`재생'
+                                          '<파일번호1> [파일번호2] 옵션{r - 랜덤}...\n`볼륨\n'
+                                          '`채널 [채널번호]\n`del**',
                               color=0x00ff00)
         sent = await channel.send(embed=embed)
         await asyncio.sleep(60)
         await sent.delete()
 
-    if content.startswith("/목록"):
+    if content.startswith("`목록"):
         if message.channel in tch_list:
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"/목록 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(f"목록 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         msg = ''
         flist = mp3.getflist()
         for i in range(len(flist)):
             if flist[i]:
-                msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
+                if flist[i].startswith('yt|'):
+                    tmp = flist[i].split('|')[1]
+                    msg = msg + f'**{i}** | {tmp.replace("_", "-")}\n'
+                else:
+                    msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
+        msg.replace('.mp3', '')
         embed = discord.Embed(title=":floppy_disk: **MP3** :floppy_disk: ", description=msg, color=0xff8f00)
         if list_msg is not None:
             await list_msg.delete()
@@ -103,22 +111,22 @@ async def on_message(message):
         list_msg = await channel.send(embed=embed)
         await list_msg.add_reaction("🔁")
 
-    if content.startswith("/del"):
+    if content.startswith("`del"):
         if message.channel in tch_list:
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"/del Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(f"del Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         num = content[5:]
         if num.isdecimal():
             mp3.delSource(int(num))
 
-    if content.startswith("/재생") :
+    if content.startswith("`재생") :
         if message.channel in tch_list:
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"/재생 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(f"재생 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         recentuser = author
         keepplaying = True
         fid = content[4:]
@@ -151,9 +159,6 @@ async def on_message(message):
                 plist.remove(tmp)
             plist = tmplist
         playnext = True
-        while lock:
-            await asyncio.sleep(0.1)
-        lock = True
         goingtodiscon = False
         for i in range(plist.__len__()):
             if vc == None:
@@ -169,6 +174,7 @@ async def on_message(message):
             play_msg = None
             pause_msg = None
             nextfile = None
+            discord.Embed.video
             if plist.__len__() > i + 1:
                 nextfile = flist[plist[i + 1]]
             audiosrc = mp3.getSource(plist[i], vol=vol)
@@ -176,18 +182,22 @@ async def on_message(message):
                 keepplaying = True
                 vc.play(audiosrc[1])
                 log.writelog(f"Playing as filename : {audiosrc[3]}")
-                des = f'\t\t사용자 : {author.mention}\n' + audiosrc[2]
+                des = f'\t\t최근 사용자 : {recentuser.mention}\n{audiosrc[3].split("|")[1] if audiosrc[3].startswith("yt|") else audiosrc[3].replace(".mp3", "")}'
                 if nextfile:
-                    des = des + f'\n다음 : {nextfile}'
-                des = des + f'\n최근 사용자 : {recentuser.mention}'
-                play_msg = await channel.send(
-                    embed=discord.Embed(title=":arrow_forward: 재생", description=des, color=0x00ff2c + i))
+                    des = des + f'\n다음 : {nextfile.split("|")[1] if nextfile.startswith("yt|") else nextfile.replace(".mp3", "")}'
+                if audiosrc[3].startswith('yt|'): 
+                    embed = discord.Embed(title=f":arrow_forward:", description=des, color=0x00ff2c + i)
+                    embed.add_field(name="Youtube", value=f'https://www.youtube.com/watch?v={audiosrc[3].split("|")[2]}', inline=False)
+                else:
+                    embed = discord.Embed(title=f":arrow_forward:", description=des, color=0x00ff2c + i)
+                play_msg = await channel.send(embed=embed)
                 await play_msg.add_reaction(":bee3:684780556860653753")
                 await play_msg.add_reaction(":stop:709351389855481867")
                 while vc.is_playing():
                     await asyncio.sleep(1)
                     if not keepplaying:
                         vc.stop()
+                keepplaying = False
                 if play_msg:
                     await play_msg.delete()
                 play_msg = None
@@ -208,12 +218,11 @@ async def on_message(message):
                 return
             if not playnext:
                 break
+        if keepplaying:
+            goingtodiscon = False
         sent = await channel.send(f'정지 {recentuser.mention}')
         await asyncio.sleep(5)
         await sent.delete()
-        lock = True
-        goingtodiscon = True
-        lock = False
         for i in range(120):
             await asyncio.sleep(1)
             if not goingtodiscon:
@@ -222,23 +231,21 @@ async def on_message(message):
                 await vc.disconnect()
                 vc = None
 
-    if content.startswith("/yt"):
-        if message.channel in tch_list:
-            await message.delete()
+    if content.startswith("`yt"):
         if not is_privileged(author):
             return
-        log.writelog(f"/yt Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(f"yt Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         param = content[4:]
         if len(param) == 11:
             x = threading.Thread(target=ytdl.ytdownload, args=(param,))
             x.start()
 
-    if content.startswith("/볼륨"):
+    if content.startswith("`볼륨"):
         if message.channel in tch_list:
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"/볼륨 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(f"볼륨 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         arg = content[4:].replace(' ', '')
         if arg.__len__() > 0 and arg.isdigit():
             if 0 < int(arg) <= 100:
@@ -247,32 +254,13 @@ async def on_message(message):
         sent = await channel.send(embed=embed)
         await asyncio.sleep(5)
         await sent.delete()
-    '''
-    if content.startswith('/노트'):
-        if message.channel in tch_list:
-            await message.delete()
-        log.writelog(f"/노트 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
-        if len(content[4:]):
-            log.writelog(f"Note Added Author:{audpname}({auid}) content : {content[4:]}")
-            with open("note.txt", "a+") as f:
-                f.write(f"{message.author.display_name} | {content[4:]}\n")
-                f.seek(0, 0)
-                note = f.read()
-            sent = await channel.send(f"노트 추가됨 : {content[4:]}")
-            await asyncio.sleep(10)
-            await sent.delete()
-        else:
-            embed = discord.Embed(title=":notepad_spiral: **노트** :notepad_spiral: ", description=note, color=0xff8f00)
-            sent = await channel.send(embed=embed)
-            await asyncio.sleep(60)
-            await sent.delete()
-    '''
-    if content.startswith("/채널"):
+
+    if content.startswith("`ch"):
         if message.channel in tch_list:
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"/채널 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(f"ch Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         arg = content[4:].replace(' ', '')
         if arg.__len__() > 0 and arg.isdigit():
             if guild.get_channel(int(arg)) is not None:
@@ -299,41 +287,18 @@ async def on_message(message):
         await asyncio.sleep(5)
         await sent.delete()
 
-    '''if content.startswith("/서버"):
-        if message.channel in tch_list:
-            await message.delete()
-        log.writelog(f"/서버 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
-        try:
-            server = MinecraftServer(sv_addr)
-            query = server.query()
-        except Exception:
-            sent = await channel.send(":interrobang: ")
-            await asyncio.sleep(5)
-            await sent.delete()
-            pass
-        else:
-            embed = discord.Embed(title="**서버 정보**",
-                                  description=f'서버 주소 : {sv_addr}\n'
-                                              f'MOTD : {query.motd}\n'
-                                              f'버전 : {query.software.version}\n'
-                                              f'플레이어 : {query.players.names}[{query.players.online}/{query.players.max}]',
-                                  color=0xff2f00)
-            sent = await channel.send(embed=embed)
-            await asyncio.sleep(60)
-            await sent.delete()
-    '''
-    if content.startswith("/코로나"):
-        if message.channel in tch_list:
-            await message.delete()
-        log.writelog(f"/코로나 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
-        data = covid.getdatancov()
-        embed = discord.Embed(title="**코로나19 정보(고장남)**",
-                              description=f"**확진환자 : {data[0]} 명**\n **격리중 : {data[2]} 명**\n**사망 : {data[3]}명**\n_{data[4]}_",
-                              color=0xff2f00)
-        sent = await channel.send(embed=embed)
-        await asyncio.sleep(10)
-        await sent.delete()
 
+    if content.startswith("`코로나"):
+        if message.channel in tch_list:
+            await message.delete()
+        log.writelog(f"코로나 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        data = covid.getdatancov()
+        embed = discord.Embed(title=f"**({data[0]})코로나19 정보**",
+                              description=f"**확진환자 : {data[1]} 명**\n **격리해제 : {data[2]} 명**\n**검사진행 : {data[3]}명**\n**사망자 : {data[4]}명**",
+                              color=0xff2f00)
+        await channel.send(embed=embed)
+    if author.id == 400115094929014797:
+        None
     return
 
 
@@ -362,13 +327,13 @@ async def on_ready():
     for ch in vch_list:
         print(f"{ch.name}({ch.id})")
     print('------------------------------------------------------------')
-    await client.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("/명령어로 명령어 확인"))
+    await client.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("`명령어로 명령어 확인"))
     await tch.purge(limit=200, check=is_me)
 
 
 @client.event
 async def on_reaction_add(reaction, user):
-    global play_msg, keepplaying, playnext, listdata, recentuser, list_msg
+    global play_msg, keepplaying, playnext, recentuser, list_msg
     if play_msg is not None:
         users = await reaction.users().flatten()
         if reaction.message.id == play_msg.id:
@@ -404,6 +369,4 @@ async def on_reaction_add(reaction, user):
                     list_msg = await channel.send(embed=embed)
                     await list_msg.add_reaction("🔁")
 
-
-with open('credentials.json') as f:
-    client.run(json.load(f)['token'])
+client.run(os.getenv('DISCORD_TOKEN'))

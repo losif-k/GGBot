@@ -12,7 +12,7 @@ def getSource(arg, vol):
                 des,
                 flist[arg]]
     else:
-        return [False, 0, f"{arg} 번은 없닭"]
+        return [False, 0, "마 제대로 써라!"]
 
 def delSource(arg):
     flist = getflist()
@@ -25,7 +25,9 @@ def getflist():
     yt_list = []
     list = []
     for f in tmp:
-        if f.startswith("Youtube-"):
+        if not f.endswith('.mp3'):
+            continue
+        if f.startswith("yt|"):
             yt_list.append(f)
         else:
             list.append(f)

@@ -5,3 +5,5 @@ PyNaCl
 requests
 urllib3
 youtube-dl
+xmltodict
+dotenv

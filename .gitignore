@@ -130,6 +130,6 @@ dmypy.json
 
 # Files
 .idea/
+.vscode/
 mp3_files/
 log.txt
-credentials.json
