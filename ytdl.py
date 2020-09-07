@@ -31,7 +31,6 @@ ydl_opts = {
 }
 
 def ytdownload(arg):
-    global channel
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download(['https://www.youtube.com/watch?v=' + arg[0]])
         
