@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import youtube_dl
-
+import discord
 
 class MyLogger(object):
     def debug(self, msg):
@@ -17,7 +17,7 @@ def my_hook(d):
     if d['status'] == 'finished':
         print('Done downloading')
 
-ydl_opts_download = {
+ydl_opts = {
     'format': 'bestaudio/best',
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -29,12 +29,9 @@ ydl_opts_download = {
     'outtmpl' : 'mp3_files/yt|%(title)s|%(id)s|.%(ext)s'
     
 }
-ydl_opts_info = {
-    'outtmpl' : 'mp3_files/yt|%(id)s|.%(ext)s'
-    
-}
-def ytdownload(arg):
-    with youtube_dl.YoutubeDL(ydl_opts_download) as ydl:
-        ydl.download(['https://www.youtube.com/watch?v=' + arg])
 
+def ytdownload(arg):
+    global channel
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download(['https://www.youtube.com/watch?v=' + arg[0]])
         

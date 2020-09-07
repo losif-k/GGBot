@@ -52,6 +52,8 @@ def is_privileged(u):
     return u in guild.get_role(694430139395735642).members
 
 
+
+
 @client.event
 async def on_message(message):
     now = datetime.now()
@@ -98,12 +100,13 @@ async def on_message(message):
         flist = mp3.getflist()
         for i in range(len(flist)):
             if flist[i]:
-                if flist[i].startswith('yt|'):
-                    tmp = flist[i].split('|')[1]
-                    msg = msg + f'**{i}** | {tmp.replace("_", "-")}\n'
-                else:
-                    msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
-        msg.replace('.mp3', '')
+                if flist[i].endswith('.mp3'):
+                    if flist[i].startswith('yt|'):
+                        tmp = flist[i].split('|')[1]
+                        msg = msg + f'**{i}** | {tmp.replace("_", "-")}\n'
+                    else:
+                        msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
+        msg = msg.replace('.mp3', '')
         embed = discord.Embed(title=":floppy_disk: **MP3** :floppy_disk: ", description=msg, color=0xff8f00)
         if list_msg is not None:
             await list_msg.delete()
