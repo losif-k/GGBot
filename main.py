@@ -363,7 +363,13 @@ async def on_reaction_add(reaction, user):
                     flist = mp3.getflist()
                     for i in range(len(flist)):
                         if flist[i]:
-                            msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
+                            if flist[i].endswith('.mp3'):
+                                if flist[i].startswith('yt|'):
+                                    tmp = flist[i].split('|')[1]
+                                    msg = msg + f'**{i}** | {tmp.replace("_", "-")}\n'
+                                else:
+                                    msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
+                    msg = msg.replace('.mp3', '')
                     embed = discord.Embed(title=":floppy_disk: **MP3** :floppy_disk: ", description=msg, color=0xff8f00)
                     channel = list_msg.channel
                     if list_msg is not None:
