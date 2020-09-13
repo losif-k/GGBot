@@ -83,8 +83,7 @@ async def on_message(message):
             await message.delete()
         embed = discord.Embed(title="**명령어**",
                               description='**`코로나\n`목록\n`yt 11자리 코드\n`재생'
-                                          '<파일번호1> [파일번호2] 옵션{r - 랜덤}...\n`볼륨\n'
-                                          '`채널 [채널번호]\n`del**',
+                                          '<파일번호1> [파일번호2] 옵션{r - 랜덤}...\n`볼륨\n**',
                               color=0x00ff00)
         sent = await channel.send(embed=embed)
         await asyncio.sleep(60)
@@ -96,23 +95,39 @@ async def on_message(message):
         if not is_privileged(author):
             return
         log.writelog(f"목록 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
-        msg = ''
         flist = mp3.getflist()
+        first_index = 0;
+        max_page = int(flist.__len__() / 25 + 1)
+        if flist.__len__() > 25:
+            if content[4:].isdigit():
+                if int(content[4:]) - 1 * 25 <= flist.__len__():
+                    first_index = (int(content[4:]) - 1) * 25
+                    flist = flist[first_index:]
+                    if flist.__len__() > 24:
+                        flist = flist[0:24]
+                else:
+                    first_index = 0
+                    if first_index + 24 < flist.__len__():
+                        flist = flist[0:24]
+            else:
+                    first_index = 0
+                    if first_index + 24 < flist.__len__():
+                        flist = flist[0:24]
+                
+        embed = discord.Embed(title=":floppy_disk: **List** :floppy_disk:", description=f'{int((first_index + 1) / 25 + 1)}/{max_page}', color=0xff8f00)
         for i in range(len(flist)):
             if flist[i]:
                 if flist[i].endswith('.mp3'):
                     if flist[i].startswith('yt|'):
-                        tmp = flist[i].split('|')[1]
-                        msg = msg + f'**{i}** | {tmp.replace("_", "-")}\n'
+                        title = flist[i].split('|')[1]
+                        embed.add_field(name=i + 1 + first_index, value=title)
                     else:
-                        msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
-        msg = msg.replace('.mp3', '')
-        embed = discord.Embed(title=":floppy_disk: **MP3** :floppy_disk: ", description=msg, color=0xff8f00)
+                        title = flist[i].replace("_", "-").replace('.mp3', '')
+                        embed.add_field(name=i + 1 + first_index, value=title)
         if list_msg is not None:
             await list_msg.delete()
             list_msg = None
         list_msg = await channel.send(embed=embed)
-        await list_msg.add_reaction("🔁")
 
     if content.startswith("`del"):
         if message.channel in tch_list:
@@ -180,7 +195,7 @@ async def on_message(message):
             discord.Embed.video
             if plist.__len__() > i + 1:
                 nextfile = flist[plist[i + 1]]
-            audiosrc = mp3.getSource(plist[i], vol=vol)
+            audiosrc = mp3.getSource(plist[i] - 1, vol=vol)
             if audiosrc[0]:
                 keepplaying = True
                 vc.play(audiosrc[1])
@@ -237,6 +252,8 @@ async def on_message(message):
     if content.startswith("`yt"):
         if not is_privileged(author):
             return
+        if message.channel in tch_list:
+            await message.delete()
         log.writelog(f"yt Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         param = content[4:]
         if len(param) == 11:
@@ -354,28 +371,5 @@ async def on_reaction_add(reaction, user):
                             elif reaction.emoji.id == 684780556860653753:
                                 keepplaying = False
                                 recentuser = user
-    if list_msg is not None:
-        if reaction.message.id == list_msg.id:
-            if reaction.emoji == '🔁':
-                if reaction.count > 1:
-                    log.writelog(f"Playlist Refreshed")
-                    msg = ''
-                    flist = mp3.getflist()
-                    for i in range(len(flist)):
-                        if flist[i]:
-                            if flist[i].endswith('.mp3'):
-                                if flist[i].startswith('yt|'):
-                                    tmp = flist[i].split('|')[1]
-                                    msg = msg + f'**{i}** | {tmp.replace("_", "-")}\n'
-                                else:
-                                    msg = msg + f'**{i}** | {flist[i].replace("_", "-")}\n'
-                    msg = msg.replace('.mp3', '')
-                    embed = discord.Embed(title=":floppy_disk: **MP3** :floppy_disk: ", description=msg, color=0xff8f00)
-                    channel = list_msg.channel
-                    if list_msg is not None:
-                        await list_msg.delete()
-                        list_msg = None
-                    list_msg = await channel.send(embed=embed)
-                    await list_msg.add_reaction("🔁")
 
 client.run(os.getenv('DISCORD_TOKEN'))
