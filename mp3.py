@@ -5,14 +5,11 @@ import discord
 
 def getSource(arg, vol):
     flist = getflist()
-    if arg < len(flist):
-        des = f'**{flist[arg]}**'
-        return [True,
-                discord.PCMVolumeTransformer(original=discord.FFmpegPCMAudio("./mp3_files/" + flist[arg]), volume=vol),
-                des,
-                flist[arg]]
-    else:
-        return [False, 0, "마 제대로 써라!"]
+    des = f'**{flist[arg]}**'
+    return [True,
+            discord.PCMVolumeTransformer(original=discord.FFmpegPCMAudio("./mp3_files/" + flist[arg]), volume=vol),
+            des,
+            flist[arg]]
 
 def delSource(arg):
     flist = getflist()

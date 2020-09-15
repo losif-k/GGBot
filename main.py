@@ -1,24 +1,23 @@
-import asyncio  # asyncio.sleep를 위한 import
+import asyncio
 import glob
-import json  # config.json 파일 처리를 위한 import
+import json
 import os
 import random
 import threading
 from datetime import datetime
 
-import discord  # discordpy : https://discordpy.readthedocs.io/en/latest/api.html
+import discord
 from mcstatus import MinecraftServer
 
-import covid  # 코로나 바이러스 웹 파싱
-import log  # log기록 함수
-import mp3  # mp3파일 관련 함수
+import covid
+import log
+import mp3
 import ytdl
 
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 
-# 추가 파일
 
 with open('config.json') as f:
     config = json.load(f)
@@ -44,14 +43,13 @@ recentuser = None
 goingtodiscon = False
 lock = False
 
+
 def is_me(m):
     return m.author == client.user
 
 
 def is_privileged(u):
     return u in guild.get_role(694430139395735642).members
-
-
 
 
 @client.event
@@ -94,9 +92,10 @@ async def on_message(message):
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"목록 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"목록 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         flist = mp3.getflist()
-        first_index = 0;
+        first_index = 0
         max_page = int(flist.__len__() / 25 + 1)
         if flist.__len__() > 25:
             if content[4:].isdigit():
@@ -110,11 +109,12 @@ async def on_message(message):
                     if first_index + 24 < flist.__len__():
                         flist = flist[0:24]
             else:
-                    first_index = 0
-                    if first_index + 24 < flist.__len__():
-                        flist = flist[0:24]
-                
-        embed = discord.Embed(title=":floppy_disk: **List** :floppy_disk:", description=f'{int((first_index + 1) / 25 + 1)}/{max_page}', color=0xff8f00)
+                first_index = 0
+                if first_index + 24 < flist.__len__():
+                    flist = flist[0:24]
+
+        embed = discord.Embed(title=":floppy_disk: **List** :floppy_disk:",
+                              description=f'{int((first_index + 1) / 25 + 1)}/{max_page}', color=0xff8f00)
         for i in range(len(flist)):
             if flist[i]:
                 if flist[i].endswith('.mp3'):
@@ -134,17 +134,19 @@ async def on_message(message):
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"del Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"del Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         num = content[5:]
         if num.isdecimal():
             mp3.delSource(int(num))
 
-    if content.startswith("`재생") :
+    if content.startswith("`재생"):
         if message.channel in tch_list:
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"재생 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"재생 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         recentuser = author
         keepplaying = True
         fid = content[4:]
@@ -160,15 +162,18 @@ async def on_message(message):
         if 'r' in fid:
             randomplay = True
             fid.remove('r')
-        else:
-            for i in fid:
-                if i.isdigit():
-                    if int(i) < 0 or int(i) > flist.__len__():
-                        continue
-                    else:
-                        plist.append(int(i))
-                else:
+        if 'a' in fid:
+            fid = []
+            for i in range(1, flist.__len__() + 1):
+                fid.append(str(i))
+        for i in fid:
+            if i.isdigit():
+                if int(i) < 1 or int(i) > flist.__len__() + 1:
                     continue
+                else:
+                    plist.append(int(i))
+            else:
+                continue
         if randomplay:
             tmplist = []
             for i in range(plist.__len__()):
@@ -181,69 +186,51 @@ async def on_message(message):
         for i in range(plist.__len__()):
             if vc == None:
                 vc = await vch.connect()
+            if not vc.is_connected():
+                vc = await vch.connect()
             if vc.is_playing():
-                vc.stop()
-                playnext = False
-                await asyncio.sleep(1.5)
-            if play_msg:
-                await play_msg.delete()
-            if pause_msg:
-                await pause_msg.delete()
+                sent = await channel.send('응 재생중이야~')
+                await asyncio.sleep(5)
+                await sent.delete()
+                return
             play_msg = None
-            pause_msg = None
             nextfile = None
-            discord.Embed.video
             if plist.__len__() > i + 1:
                 nextfile = flist[plist[i + 1]]
             audiosrc = mp3.getSource(plist[i] - 1, vol=vol)
-            if audiosrc[0]:
-                keepplaying = True
-                vc.play(audiosrc[1])
-                log.writelog(f"Playing as filename : {audiosrc[3]}")
-                des = f'\t\t최근 사용자 : {recentuser.mention}\n{audiosrc[3].split("|")[1] if audiosrc[3].startswith("yt|") else audiosrc[3].replace(".mp3", "")}'
-                if nextfile:
-                    des = des + f'\n다음 : {nextfile.split("|")[1] if nextfile.startswith("yt|") else nextfile.replace(".mp3", "")}'
-                if audiosrc[3].startswith('yt|'): 
-                    embed = discord.Embed(title=f":arrow_forward:", description=des, color=0x00ff2c + i)
-                    embed.add_field(name="Youtube", value=f'https://www.youtube.com/watch?v={audiosrc[3].split("|")[2]}', inline=False)
-                else:
-                    embed = discord.Embed(title=f":arrow_forward:", description=des, color=0x00ff2c + i)
-                play_msg = await channel.send(embed=embed)
-                await play_msg.add_reaction(":bee3:684780556860653753")
-                await play_msg.add_reaction(":stop:709351389855481867")
-                while vc.is_playing():
-                    await asyncio.sleep(1)
-                    if not keepplaying:
-                        vc.stop()
-                keepplaying = False
-                if play_msg:
-                    await play_msg.delete()
-                play_msg = None
+            keepplaying = True
+            vc.play(audiosrc[1])
+            log.writelog(f"Playing as filename : {audiosrc[3]}")
+            des = f'\t\t최근 사용자 : {recentuser.mention}\n{audiosrc[3].split("|")[1] if audiosrc[3].startswith("yt|") else audiosrc[3].replace(".mp3", "")}'
+            if nextfile:
+                des = des + \
+                    f'\n다음 : {nextfile.split("|")[1] if nextfile.startswith("yt|") else nextfile.replace(".mp3", "")}'
+            if audiosrc[3].startswith('yt|'):
+                embed = discord.Embed(
+                    title=f":arrow_forward:", description=des, color=0x00ff2c + i)
+                embed.add_field(
+                    name="Youtube", value=f'https://www.youtube.com/watch?v={audiosrc[3].split("|")[2]}', inline=False)
             else:
-                log.writelog(f"as Error user input : {f}")
-                sent = await channel.send(audiosrc[2])
-                await asyncio.sleep(5)
-                await sent.delete()
-                goingtodiscon = True
-                lock = False
-                for i in range(120):
-                    await asyncio.sleep(1)
-                    if not goingtodiscon:
-                        break
-                    if i == 119:
-                        await vc.disconnect()
-                        vc = None
-                return
+                embed = discord.Embed(
+                    title=f":arrow_forward:", description=des, color=0x00ff2c + i)
+            play_msg = await channel.send(embed=embed)
+            await play_msg.add_reaction(":bee3:684780556860653753")
+            await play_msg.add_reaction(":stop:709351389855481867")
+            while vc.is_playing():
+                await asyncio.sleep(1)
+                if not keepplaying:
+                    vc.stop()
+            if play_msg:
+                await play_msg.delete()
+            play_msg = None
             if not playnext:
                 break
-        if keepplaying:
-            goingtodiscon = False
         sent = await channel.send(f'정지 {recentuser.mention}')
         await asyncio.sleep(5)
         await sent.delete()
         for i in range(120):
             await asyncio.sleep(1)
-            if not goingtodiscon:
+            if not goingtodiscon or keepplaying:
                 break
             if i == 119:
                 await vc.disconnect()
@@ -254,7 +241,8 @@ async def on_message(message):
             return
         if message.channel in tch_list:
             await message.delete()
-        log.writelog(f"yt Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"yt Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         param = content[4:]
         if len(param) == 11:
             x = threading.Thread(target=ytdl.ytdownload, args=(param,))
@@ -265,12 +253,14 @@ async def on_message(message):
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"볼륨 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"볼륨 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         arg = content[4:].replace(' ', '')
         if arg.__len__() > 0 and arg.isdigit():
             if 0 < int(arg) <= 100:
                 vol = int(arg) / 100
-        embed = discord.Embed(title="**볼륨**", description=f'{int(vol * 100)}%', color=0xff2f00)
+        embed = discord.Embed(
+            title="**볼륨**", description=f'{int(vol * 100)}%', color=0xff2f00)
         sent = await channel.send(embed=embed)
         await asyncio.sleep(5)
         await sent.delete()
@@ -280,7 +270,8 @@ async def on_message(message):
             await message.delete()
         if not is_privileged(author):
             return
-        log.writelog(f"ch Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"ch Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         arg = content[4:].replace(' ', '')
         if arg.__len__() > 0 and arg.isdigit():
             if guild.get_channel(int(arg)) is not None:
@@ -307,11 +298,11 @@ async def on_message(message):
         await asyncio.sleep(5)
         await sent.delete()
 
-
     if content.startswith("`코로나"):
         if message.channel in tch_list:
             await message.delete()
-        log.writelog(f"코로나 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
+        log.writelog(
+            f"코로나 Executed {channel}({channel.id}) | {audpname}({auid}) -{content}")
         data = covid.getdatancov()
         embed = discord.Embed(title=f"**({data[0]})코로나19 정보**",
                               description=f"**확진환자 : {data[1]} 명**\n **격리해제 : {data[2]} 명**\n**검사진행 : {data[3]}명**\n**사망자 : {data[4]}명**",
