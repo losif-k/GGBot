@@ -228,13 +228,6 @@ async def on_message(message):
         sent = await channel.send(f'정지 {recentuser.mention}')
         await asyncio.sleep(5)
         await sent.delete()
-        for i in range(120):
-            await asyncio.sleep(1)
-            if not goingtodiscon or keepplaying:
-                break
-            if i == 119:
-                await vc.disconnect()
-                vc = None
 
     if content.startswith("`yt"):
         if not is_privileged(author):
