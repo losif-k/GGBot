@@ -6,4 +6,4 @@ requests
 urllib3
 youtube-dl
 xmltodict
-dotenv
+python-dotenv
