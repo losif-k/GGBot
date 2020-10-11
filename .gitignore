@@ -133,3 +133,4 @@ dmypy.json
 .vscode/
 mp3_files/
 log.txt
+credentials.json
