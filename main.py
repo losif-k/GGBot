@@ -3,11 +3,9 @@ import glob
 import json
 import os
 import random
-import threading
 from datetime import datetime
 
 import discord
-from mcstatus import MinecraftServer
 
 import covid
 import log
@@ -32,16 +30,13 @@ tch = None
 vch = None
 vc = None
 play_msg = None
-pause_msg = None
 list_msg = None
 playnext = True
 keepplaying = True
-tch_list = []
 vch_list = []
 vol = 0.15
 recentuser = None
 goingtodiscon = False
-lock = False
 
 
 def is_me(m):
@@ -56,7 +51,7 @@ def is_privileged(u):
 async def on_message(message):
     now = datetime.now()
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-    global tch, tch_id, vch, vch_id, guild, vc, playnext, play_msg, pause_msg, keepplaying, vol, list_msg, recentuser, goingtodiscon, lock
+    global vc, playnext, play_msg, keepplaying, vol, list_msg, recentuser, goingtodiscon
     channel = message.channel
     content = str(message.content)
     audpname = message.author.display_name
@@ -308,12 +303,10 @@ async def on_message(message):
 
 @client.event
 async def on_ready():
-    global guild, guild_id, tch, tch_id, vch, vch_id, tch_list, vch_list, vc
+    global guild, guild_id, tch, tch_id, vch, vch_id, vch_list, vc
     guild = client.get_guild(guild_id)
     for ch in client.get_all_channels():
-        if ch.type is discord.ChannelType.text:
-            tch_list.append(ch)
-        elif ch.type is discord.ChannelType.voice:
+        if ch.type is discord.ChannelType.voice:
             vch_list.append(ch)
         else:
             continue
@@ -324,12 +317,6 @@ async def on_ready():
     print('------------------------------------------------------------')
     print('Server Info')
     print(f"{guild.name}({guild.id})")
-    print(f"TextChannel List : ")
-    for ch in tch_list:
-        print(f"{ch.name}({ch.id})")
-    print(f"VoiceChannel List : ")
-    for ch in vch_list:
-        print(f"{ch.name}({ch.id})")
     print('------------------------------------------------------------')
     await client.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("`명령어로 명령어 확인"))
     await tch.purge(limit=200, check=is_me)
